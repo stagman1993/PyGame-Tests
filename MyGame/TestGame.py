@@ -1,7 +1,9 @@
+from tkinter import CENTER
 from turtle import window_height, window_width
 import pygame
 import time
 import Movement
+from random import randint
 
 pygame.init()
 pygame.font.init()
@@ -15,7 +17,6 @@ test_font = pygame.font.FontType("Assets/font/Pixeltype.ttf", 50)
 player_speed = 2
 boost_multiplier = 2
 
-
 """Start Code"""
 window = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Test Game")
@@ -28,11 +29,12 @@ ground_surface = pygame.image.load(
     "Assets\graphics\ground.png").convert_alpha()
 ground_rect = ground_surface.get_rect(top = 300)
 
-
 """Enemy Details"""
 snail_surface = pygame.image.load(
     "Assets\graphics\snail\snail1.png").convert_alpha()
 snail_rect = snail_surface.get_rect(bottomleft = (820, 300))
+fly_surface = pygame.image.load("Assets\graphics\Fly\Fly1.png").convert_alpha()
+fly_rect = fly_surface.get_rect(center = (800, 150))
 
 """Player Details"""
 player_surface = pygame.image.load(
@@ -52,6 +54,12 @@ game_over_surface = test_font.render("Press R to Start", False,
 game_over_rect = game_over_surface.get_rect(midbottom = 
                                     (screen_width/2, screen_height-25))
 
+"""Game Title"""
+game_name_surface = test_font.render("Pixel Jumper", False, 
+                                    (64, 64, 64))
+game_name_Rect = game_name_surface.get_rect(midtop = (screen_width/2, 25))
+
+
 def update_score(score, colour):
     score_surface = test_font.render(f"Score: {score}", False, 
                                              (64, 64, 64))
@@ -59,21 +67,40 @@ def update_score(score, colour):
     pygame.draw.rect(window, colour, score_rect)
     pygame.draw.rect(window, colour, score_rect, 50)
     window.blit(score_surface, score_rect)
+    
+
+def enemy_movement(enemy_list):
+    if enemy_list:
+        for enemy_rect in enemy_list:
+            enemy_rect.x -= 2
+
+            window.blit(snail_surface, enemy_rect)
+
+        return enemy_list
+    else: return []
+        
 
 def main():
-
+    
     running = True
     game_active = False
     clock = pygame.time.Clock()
     player_gravity = 0
     score = 0
+    enemy_rect_list = []
+
+    #Timer
+    obstacle_timer = pygame.USEREVENT + 1
+    timer = pygame.time.set_timer(obstacle_timer, 1000)
 
     while running:
+        
 
         if game_active:
-            clock.tick(60)
             keys = pygame.key.get_pressed()
-            
+
+            print(timer)
+
             """Environment"""
             window.blit(bg_surface, (0, 0))
             window.blit(ground_surface, (0, 300))
@@ -81,13 +108,15 @@ def main():
             """Score"""
             update_score(score, "#c0e8ec")
 
-            """Snail"""
-            snail_rect.x -= 5 #Snail Movement
-            if snail_rect.right <= 0: 
-                snail_rect.left = screen_width
-                score += 1
-        
-            window.blit(snail_surface, snail_rect)
+            """Obstacle Movement"""
+            enemy_rect_list = enemy_movement(enemy_rect_list)
+
+            # """Snail"""
+            # snail_rect.x -= 5 #Snail Movement
+            # if snail_rect.right <= 0: 
+            #     snail_rect.left = screen_width
+            #     score += 1
+            # window.blit(snail_surface, snail_rect)
 
             """Player"""
             player_gravity += 1
@@ -101,6 +130,10 @@ def main():
             window.blit(player_surface, player_rect)
             if player_rect.colliderect(snail_rect):
                 game_active = False
+
+            if event.type == obstacle_timer:
+                print("Test")
+        
 
             """Mouse Test Code"""
             # pygame.mouse.set_visible(1)
@@ -119,7 +152,11 @@ def main():
         else:
             keys = pygame.key.get_pressed()
             window.fill((94, 129, 162))
-            update_score(score, (94, 129, 162))
+            if score > 0:
+                update_score(score, (94, 129, 162))
+            else:
+                window.blit(game_name_surface, game_name_Rect)
+
             window.blit(game_over_surface, game_over_rect)
             window.blit(player_stand, player_stand_rect)
             
@@ -133,10 +170,9 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
-
         
         pygame.display.update() #Updates Display
+        clock.tick(60)
 
         """Debug Keys"""
         if keys[pygame.K_p]:
